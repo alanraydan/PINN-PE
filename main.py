@@ -1,6 +1,5 @@
 import deepxde as dde
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 # --Full viscosity and diffusivity--
@@ -64,18 +63,38 @@ def primitive_equations(x, y):
     return [pde1, pde2, pde3, pde4]
 
 
-# --Initial conditions--
+# --Initial condition for u--
 def init_cond_u(x):
     return -np.sin(2 * np.pi * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2])
 
 
+# --Initial condition for T--
 def init_cond_T(x):
     return 0.0 * x[:, 0:1]
 
 
-# --Boundary conditions for each function--
+def initial_conditions():
+    ic_u = dde.icbc.IC(geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0)
+    ic_T = dde.icbc.IC(geomtime, init_cond_T, lambda _, on_initial: on_initial, component=3)
+    return [ic_u, ic_T]
+
+
+# --Boundary values for z component--
 def z_boundary(x, on_boundary):
     return on_boundary and (np.isclose(x[1], 0) or np.isclose(x[1], 1))
+
+
+def boundary_conditions():
+    bc_u_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=0)
+    bc_u_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=0)
+    bc_w_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=1)
+    bc_w_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=1)
+    bc_w_z_Dirichlet = dde.icbc.DirichletBC(geomtime, lambda x: 0, z_boundary, component=1)
+    bc_p_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=2)
+    bc_p_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=2)
+    bc_T_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=3)
+    bc_T_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=3)
+    return [bc_u_x, bc_u_z, bc_w_x, bc_w_z, bc_w_z_Dirichlet, bc_p_x, bc_p_z, bc_T_x, bc_T_z]
 
 
 def plot_all_output3d(times, func, points_per_dim=25, filename=None):
@@ -109,7 +128,7 @@ def plot_all_output3d(times, func, points_per_dim=25, filename=None):
         plt.show()
 
 
-def plot_all_error2d(times, points_per_dim=25, filename=None):
+def plot_all_error2d(times, model, points_per_dim=25, filename=None):
     # TODO: Label plots as in plot_all_output3d()
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
@@ -135,24 +154,13 @@ def plot_all_error2d(times, points_per_dim=25, filename=None):
         plt.show()
 
 
-if __name__ == '__main__':
+# --PINN setup and learning iterations--
+def learn_primitive_equations():
     # Numpy arrays default to float64 so this line is necessary
     dde.config.set_default_float('float64')
 
-    ic_u = dde.icbc.IC(geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0)
-    ic_T = dde.icbc.IC(geomtime, init_cond_T, lambda _, on_initial: on_initial, component=3)
-    ics = [ic_u, ic_T]
-
-    bc_u_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=0)
-    bc_u_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=0)
-    bc_w_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=1)
-    bc_w_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=1)
-    bc_w_z_Dirichlet = dde.icbc.DirichletBC(geomtime, lambda x: 0, z_boundary, component=1)
-    bc_p_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=2)
-    bc_p_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=2)
-    bc_T_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=3)
-    bc_T_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=3)
-    bcs = [bc_u_x, bc_u_z, bc_w_x, bc_w_z, bc_w_z_Dirichlet, bc_p_x, bc_p_z, bc_T_x, bc_T_z]
+    ics = initial_conditions()
+    bcs = boundary_conditions()
 
     data = dde.data.TimePDE(
         geomtime,
@@ -178,4 +186,8 @@ if __name__ == '__main__':
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, 'learned_model')
-    plot_all_error2d(times, 50, 'model_error')
+    plot_all_error2d(times, model, 50, 'model_error')
+
+
+if __name__ == '__main__':
+    learn_primitive_equations()
