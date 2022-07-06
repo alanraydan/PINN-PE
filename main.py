@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --Full viscosity and diffusivity--
-v_z = 0.5
-v_h = 0.5
+v_z = 0.1
+v_h = 0.1
 k_z = 1.0
 k_h = 1.0
 Q = lambda x, z, t: 0.0 * x
@@ -13,13 +13,16 @@ Q = lambda x, z, t: 0.0 * x
 x_min, x_max = 0.0, 1.0
 z_min, z_max = 0.0, 1.0
 t_min, t_max = 0.0, 1.0
-space_domain = dde.geometry.Rectangle([x_min, z_min], [x_max, z_max])
-time_domain = dde.geometry.TimeDomain(t_min, t_max)
-geomtime = dde.geometry.GeometryXTime(space_domain, time_domain)
+
+
+def get_geomtime():
+    space_domain = dde.geometry.Rectangle([x_min, z_min], [x_max, z_max])
+    time_domain = dde.geometry.TimeDomain(t_min, t_max)
+    return dde.geometry.GeometryXTime(space_domain, time_domain)
 
 
 # --Reference solution--
-def solution(xzt):
+def benchmark_solution(xzt):
     x = xzt[:, 0:1]
     z = xzt[:, 1:2]
     t = xzt[:, 2:3]
@@ -57,7 +60,6 @@ def primitive_equations(x, y):
     pde1 = du_t + u * du_x + w * du_z - v_h * du_xx - v_z * du_zz + dp_x
     pde2 = dp_z + T
     pde3 = du_x + dw_z
-    # TODO: Incorporate Q term
     pde4 = dT_t + u * dT_x + w * dT_z - k_h * dT_xx - k_z * dT_zz - q
 
     return [pde1, pde2, pde3, pde4]
@@ -74,6 +76,7 @@ def init_cond_T(x):
 
 
 def initial_conditions():
+    geomtime = get_geomtime()
     ic_u = dde.icbc.IC(geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0)
     ic_T = dde.icbc.IC(geomtime, init_cond_T, lambda _, on_initial: on_initial, component=3)
     return [ic_u, ic_T]
@@ -85,6 +88,7 @@ def z_boundary(x, on_boundary):
 
 
 def boundary_conditions():
+    geomtime = get_geomtime()
     bc_u_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=0)
     bc_u_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=0, component=0)
     bc_w_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=0, component=1)
@@ -98,7 +102,6 @@ def boundary_conditions():
 
 
 def plot_all_output3d(times, func, points_per_dim=25, filename=None):
-    assert func.__name__ == 'predict' or func.__name__ == 'solution'
     prim_names = ('u', 'w', 'p', 'T')
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
@@ -107,6 +110,10 @@ def plot_all_output3d(times, func, points_per_dim=25, filename=None):
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
     fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(13, 13), subplot_kw=dict(projection='3d'))
+    title = func.__name__
+    if func.__name__ == 'predict':
+        title = 'PINN Output'
+    fig.suptitle(title)
     fig.tight_layout()
     for i, time in enumerate(times):
         t = time * np.ones_like(x)
@@ -123,13 +130,12 @@ def plot_all_output3d(times, func, points_per_dim=25, filename=None):
             if j == 0:
                 ax[j, i].set_title(f't = {time}', y=0.99, fontsize='xx-large')
     if filename is not None:
-        fig.savefig(f'plots/{filename}')
+        fig.savefig(f'plots/multi_nn/{filename}')
     else:
         plt.show()
 
 
-def plot_all_error2d(times, model, points_per_dim=25, filename=None):
-    # TODO: Label plots as in plot_all_output3d()
+def plot_all_error2d(times, func, points_per_dim=25, filename=None):
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
     # --Reshape arrays to match func input dims--
@@ -137,11 +143,15 @@ def plot_all_error2d(times, model, points_per_dim=25, filename=None):
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
     fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(13, 13))
+    title = f'{func.__name__} error'
+    if func.__name__ == 'predict':
+        title = 'PINN Error'
     fig.tight_layout()
+    fig.suptitle(title)
     for i, time in enumerate(times):
         t = time * np.ones_like(x)
         xzt = np.hstack((x, z, t))
-        out = np.abs(model.predict(xzt) - solution(xzt))
+        out = np.abs(func(xzt) - benchmark_solution(xzt))
         for j in range(out.shape[1]):
             Out = out[:, j].reshape(X.shape)
             cs = ax[j, i].contourf(X, Z, Out)
@@ -149,16 +159,17 @@ def plot_all_error2d(times, model, points_per_dim=25, filename=None):
             ax[j, i].set_ylabel('z')
             fig.colorbar(cs, ax=ax[j, i])
     if filename is not None:
-        fig.savefig(f'plots/{filename}')
+        fig.savefig(f'plots/multi_nn/{filename}')
     else:
         plt.show()
 
 
 # --PINN setup and learning iterations--
 def learn_primitive_equations():
-    # Numpy arrays default to float64 so this line is necessary
+    # Not working with `nn.PFNN`
     dde.config.set_default_float('float64')
 
+    geomtime = get_geomtime()
     ics = initial_conditions()
     bcs = boundary_conditions()
 
@@ -170,23 +181,25 @@ def learn_primitive_equations():
         num_boundary=500,
         num_initial=500,
         train_distribution='uniform',
-        solution=solution
+        solution=benchmark_solution
     )
 
     # --Network architecture--
-    layer_size = [3] + [128] * 2 + [4]
+    layer_size = [3, [64, 64, 64, 64], [64, 64, 64, 64], 4]
     activation = 'tanh'
     initializer = 'Glorot normal'
-    net = dde.nn.FNN(layer_size, activation, initializer)
+    # The PFNN class allows us to use 4 distinct NNs instead of just 1 with 4 outputs
+    net = dde.nn.PFNN(layer_size, activation, initializer)
 
     model = dde.Model(data, net)
     model.compile('adam', lr=1e-4, loss='MSE')
-    loss_history, train_state = model.train(epochs=int(2.7e4), display_every=500)
+    loss_history, train_state = model.train(iterations=int(3e4), display_every=500)
     dde.saveplot(loss_history, train_state, issave=True, isplot=True)
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, 'learned_model')
-    plot_all_error2d(times, model, 50, 'model_error')
+    plot_all_output3d(times, benchmark_solution, 50, 'benchmark')
+    plot_all_error2d(times, model.predict, 50, 'model_error')
 
 
 if __name__ == '__main__':
