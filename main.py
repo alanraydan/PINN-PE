@@ -130,7 +130,7 @@ def plot_all_output3d(times, func, points_per_dim=25, filename=None):
             if j == 0:
                 ax[j, i].set_title(f't = {time}', y=0.99, fontsize='xx-large')
     if filename is not None:
-        fig.savefig(f'plots/multi_nn/{filename}')
+        fig.savefig(f'plots/multi_nn/{filename}2')
     else:
         plt.show()
 
@@ -159,14 +159,14 @@ def plot_all_error2d(times, func, points_per_dim=25, filename=None):
             ax[j, i].set_ylabel('z')
             fig.colorbar(cs, ax=ax[j, i])
     if filename is not None:
-        fig.savefig(f'plots/multi_nn/{filename}')
+        fig.savefig(f'plots/multi_nn/{filename}2')
     else:
         plt.show()
 
 
 # --PINN setup and learning iterations--
 def learn_primitive_equations():
-    # Not working with `nn.PFNN`
+    # Necessary because numpy defaults to `float64`
     dde.config.set_default_float('float64')
 
     geomtime = get_geomtime()
@@ -193,12 +193,11 @@ def learn_primitive_equations():
 
     model = dde.Model(data, net)
     model.compile('adam', lr=1e-4, loss='MSE')
-    loss_history, train_state = model.train(iterations=int(3e4), display_every=500)
+    loss_history, train_state = model.train(iterations=int(3e4), display_every=1000)
     dde.saveplot(loss_history, train_state, issave=True, isplot=True)
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, 'learned_model')
-    plot_all_output3d(times, benchmark_solution, 50, 'benchmark')
     plot_all_error2d(times, model.predict, 50, 'model_error')
 
 
