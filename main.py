@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # --Full viscosity and diffusivity--
-v_z = 0.1
-v_h = 0.1
+v_z = 0.01
+v_h = 0.01
 k_z = 1.0
 k_h = 1.0
 Q = lambda x, z, t: 0.0 * x
@@ -130,12 +130,12 @@ def plot_all_output3d(times, func, points_per_dim=25, filename=None):
             if j == 0:
                 ax[j, i].set_title(f't = {time}', y=0.99, fontsize='xx-large')
     if filename is not None:
-        fig.savefig(f'plots/multi_nn/{filename}2')
+        fig.savefig(f'plots/new/{filename}')
     else:
         plt.show()
 
 
-def plot_all_error2d(times, func, points_per_dim=25, filename=None):
+def plot_relative_error2d(times, func, points_per_dim=25, filename=None):
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
     # --Reshape arrays to match func input dims--
@@ -151,7 +151,7 @@ def plot_all_error2d(times, func, points_per_dim=25, filename=None):
     for i, time in enumerate(times):
         t = time * np.ones_like(x)
         xzt = np.hstack((x, z, t))
-        out = np.abs(func(xzt) - benchmark_solution(xzt))
+        out = np.abs((func(xzt) - benchmark_solution(xzt)) / benchmark_solution(xzt))
         for j in range(out.shape[1]):
             Out = out[:, j].reshape(X.shape)
             cs = ax[j, i].contourf(X, Z, Out)
@@ -159,7 +159,7 @@ def plot_all_error2d(times, func, points_per_dim=25, filename=None):
             ax[j, i].set_ylabel('z')
             fig.colorbar(cs, ax=ax[j, i])
     if filename is not None:
-        fig.savefig(f'plots/multi_nn/{filename}2')
+        fig.savefig(f'plots/new/{filename}')
     else:
         plt.show()
 
@@ -185,7 +185,7 @@ def learn_primitive_equations():
     )
 
     # --Network architecture--
-    layer_size = [3, [64, 64, 64, 64], [64, 64, 64, 64], 4]
+    layer_size = [3, [32, 32, 32, 32], [32, 32, 32, 32], 4]
     activation = 'tanh'
     initializer = 'Glorot normal'
     # The PFNN class allows us to use 4 distinct NNs instead of just 1 with 4 outputs
@@ -198,7 +198,7 @@ def learn_primitive_equations():
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, 'learned_model')
-    plot_all_error2d(times, model.predict, 50, 'model_error')
+    plot_relative_error2d(times, model.predict, 50, 'model_relative_error')
 
 
 if __name__ == '__main__':
