@@ -1,6 +1,7 @@
 import deepxde as dde
 import matplotlib.pyplot as plt
 import numpy as np
+from utils import get_params
 
 # --Full viscosity and diffusivity--
 v_z = 0.01
@@ -101,7 +102,7 @@ def boundary_conditions():
     return [bc_u_x, bc_u_z, bc_w_x, bc_w_z, bc_w_z_Dirichlet, bc_p_x, bc_p_z, bc_T_x, bc_T_z]
 
 
-def plot_all_output3d(times, func, points_per_dim=25, filename=None):
+def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
     prim_names = ('u', 'w', 'p', 'T')
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
@@ -129,13 +130,13 @@ def plot_all_output3d(times, func, points_per_dim=25, filename=None):
                 ax[j, i].text(0.5, 0.5, 1, f'{prim_names[j]}', transform=ax[j, i].transAxes, fontsize='xx-large')
             if j == 0:
                 ax[j, i].set_title(f't = {time}', y=0.99, fontsize='xx-large')
-    if filename is not None:
-        fig.savefig(f'plots/new/{filename}')
+    if outdir is not None:
+        fig.savefig(f'{outdir}/{outdir}_learned_model')
     else:
         plt.show()
 
 
-def plot_relative_error2d(times, func, points_per_dim=25, filename=None):
+def plot_relative_error2d(times, func, points_per_dim=25, outdir=None):
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
     # --Reshape arrays to match func input dims--
@@ -158,14 +159,17 @@ def plot_relative_error2d(times, func, points_per_dim=25, filename=None):
             ax[j, i].set_xlabel('x')
             ax[j, i].set_ylabel('z')
             fig.colorbar(cs, ax=ax[j, i])
-    if filename is not None:
-        fig.savefig(f'plots/new/{filename}')
+    if outdir is not None:
+        fig.savefig(f'{outdir}/{outdir}_relative_error')
     else:
         plt.show()
 
 
 # --PINN setup and learning iterations--
 def learn_primitive_equations():
+    # Get output directory name
+    outdir = get_params()
+
     # Necessary because numpy defaults to `float64`
     dde.config.set_default_float('float64')
 
@@ -179,7 +183,7 @@ def learn_primitive_equations():
         [*ics, *bcs],
         num_domain=5000,
         num_boundary=500,
-        num_initial=500,
+        num_initial=1000,
         train_distribution='uniform',
         solution=benchmark_solution
     )
@@ -193,12 +197,13 @@ def learn_primitive_equations():
 
     model = dde.Model(data, net)
     model.compile('adam', lr=1e-4, loss='MSE')
-    loss_history, train_state = model.train(iterations=int(3e4), display_every=1000)
-    dde.saveplot(loss_history, train_state, issave=True, isplot=True)
+    loss_history, train_state = model.train(iterations=int(40e3), display_every=1000)
+    dde.saveplot(loss_history, train_state, issave=True, isplot=True, output_dir=outdir)
+    dde.plot_loss_history(loss_history, fname=f'{outdir}/loss_history')
 
     times = np.array([0.0, 0.5, 1.0])
-    plot_all_output3d(times, model.predict, 50, 'learned_model')
-    plot_relative_error2d(times, model.predict, 50, 'model_relative_error')
+    plot_all_output3d(times, model.predict, 50, outdir)
+    plot_relative_error2d(times, model.predict, 50, outdir)
 
 
 if __name__ == '__main__':
