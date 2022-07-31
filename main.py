@@ -1,6 +1,7 @@
 import deepxde as dde
 import numpy as np
-from utils import get_params, plot_all_output3d, plot_relative_error2d
+from utils import get_params, plot_all_output3d, plot_error2d
+import os
 
 # --Full viscosity and diffusivity--
 v_z = 0.01
@@ -21,7 +22,6 @@ def get_geomtime():
     return dde.geometry.GeometryXTime(space_domain, time_domain)
 
 
-# --Reference solution--
 def benchmark_solution(xzt):
     x = xzt[:, 0:1]
     z = xzt[:, 1:2]
@@ -35,8 +35,10 @@ def benchmark_solution(xzt):
     return np.hstack((u, w, p, T))
 
 
-# --PDE interior residuals--
 def primitive_equations(x, y):
+    """
+    PDE interior residuals.
+    """
     u = y[:, 0:1]
     w = y[:, 1:2]
     p = y[:, 2:3]
@@ -65,13 +67,17 @@ def primitive_equations(x, y):
     return [pde1, pde2, pde3, pde4]
 
 
-# --Initial condition for u--
 def init_cond_u(x):
+    """
+    Initial condition for u.
+    """
     return -np.sin(2 * np.pi * x[:, 0:1]) * np.cos(2 * np.pi * x[:, 1:2])
 
 
-# --Initial condition for T--
 def init_cond_T(x):
+    """
+    Initial condition for T.
+    """
     return 0.0 * x[:, 0:1]
 
 
@@ -82,8 +88,10 @@ def initial_conditions():
     return [ic_u, ic_T]
 
 
-# --Boundary values for z component--
 def z_boundary(x, on_boundary):
+    """
+    Boundary values for z component.
+    """
     return on_boundary and (np.isclose(x[1], 0) or np.isclose(x[1], 1))
 
 
@@ -109,6 +117,7 @@ def learn_primitive_equations():
     # Necessary because numpy defaults to `float64`
     dde.config.set_default_float('float64')
 
+    # Setup boundary and initial conditions
     geomtime = get_geomtime()
     ics = initial_conditions()
     bcs = boundary_conditions()
@@ -124,21 +133,25 @@ def learn_primitive_equations():
         solution=benchmark_solution
     )
 
-    # --Network architecture--
+    # Network architecture
     layer_size = [3, [32, 32, 32, 32], [32, 32, 32, 32], 4]
     activation = 'tanh'
     initializer = 'Glorot normal'
     # The PFNN class allows us to use 4 distinct NNs instead of just 1 with 4 outputs
     net = dde.nn.PFNN(layer_size, activation, initializer)
 
+    # Instantiate and train model
     model = dde.Model(data, net)
     model.compile('adam', lr=1e-4, loss='MSE')
+    if not os.path.exists(f'./{outdir}'):
+        os.mkdir(f'./{outdir}')
     loss_history, train_state = model.train(iterations=int(40e3), display_every=1000, model_save_path=f'{outdir}/model')
     dde.saveplot(loss_history, train_state, issave=True, isplot=True, output_dir=outdir)
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, outdir)
-    plot_relative_error2d(times, model.predict, 50, outdir)
+    plot_error2d(times, model.predict, benchmark_solution, 'absolute', 50, outdir)
+    plot_error2d(times, model.predict, benchmark_solution, 'relative', 50, outdir)
 
 
 if __name__ == '__main__':

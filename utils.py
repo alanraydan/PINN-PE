@@ -21,12 +21,14 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
     X, Z = np.meshgrid(x_vals, z_vals)
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
+
     fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(13, 13), subplot_kw=dict(projection='3d'))
     title = func.__name__
     if func.__name__ == 'predict':
         title = 'PINN Output'
     fig.suptitle(title)
     fig.tight_layout()
+
     for i, time in enumerate(times):
         t = time * np.ones_like(x)
         xzt = np.hstack((x, z, t))
@@ -47,13 +49,15 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
         plt.show()
 
 
-def plot_relative_error2d(times, func, points_per_dim=25, outdir=None):
+def plot_error2d(times, func, benchmark, error, points_per_dim=25, outdir=None):
+    assert error == 'absolute' or error == 'relative'
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
     # --Reshape arrays to match func input dims--
     X, Z = np.meshgrid(x_vals, z_vals)
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
+
     fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(13, 13))
     title = f'{func.__name__} error'
     if func.__name__ == 'predict':
@@ -63,8 +67,10 @@ def plot_relative_error2d(times, func, points_per_dim=25, outdir=None):
     for i, time in enumerate(times):
         t = time * np.ones_like(x)
         xzt = np.hstack((x, z, t))
-        out = 2.0 * np.abs((func(xzt) - benchmark_solution(xzt))
-                           / (np.abs(func(xzt)) + np.abs(benchmark_solution(xzt))))
+        if error == 'absolute':
+            out = np.abs(func(xzt) - benchmark(xzt))
+        if error == 'relative':
+            out = np.abs((benchmark(xzt) - func(xzt)) / benchmark(xzt))
         for j in range(out.shape[1]):
             Out = out[:, j].reshape(X.shape)
             cs = ax[j, i].contourf(X, Z, Out)
@@ -72,6 +78,6 @@ def plot_relative_error2d(times, func, points_per_dim=25, outdir=None):
             ax[j, i].set_ylabel('z')
             fig.colorbar(cs, ax=ax[j, i])
     if outdir is not None:
-        fig.savefig(f'{outdir}/relative_error')
+        fig.savefig(f'{outdir}/{error}_error')
     else:
         plt.show()
