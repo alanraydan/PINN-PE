@@ -145,7 +145,7 @@ def learn_primitive_equations():
     model.compile('adam', lr=1e-4, loss='MSE')
     if not os.path.exists(f'./{outdir}'):
         os.mkdir(f'./{outdir}')
-    loss_history, train_state = model.train(iterations=int(40e3), display_every=1000, model_save_path=f'{outdir}/model')
+    loss_history, train_state = model.train(iterations=int(42e3), display_every=1000, model_save_path=f'{outdir}/model')
     dde.saveplot(loss_history, train_state, issave=True, isplot=True, output_dir=outdir)
 
     times = np.array([0.0, 0.5, 1.0])

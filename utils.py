@@ -22,12 +22,12 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
 
-    fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(13, 13), subplot_kw=dict(projection='3d'))
+    fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(9, 9.5), subplot_kw=dict(projection='3d'))
     title = func.__name__
     if func.__name__ == 'predict':
         title = 'PINN Output'
     fig.suptitle(title)
-    fig.tight_layout()
+    # fig.tight_layout()
 
     for i, time in enumerate(times):
         t = time * np.ones_like(x)
@@ -39,10 +39,9 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
             ax[j, i].set_xlabel('x')
             ax[j, i].set_ylabel('z')
             if i == 0:
-                # TODO: Find a way to format this more nicely
-                ax[j, i].text(0.5, 0.5, 1, f'{prim_names[j]}', transform=ax[j, i].transAxes, fontsize='xx-large')
-            if j == 0:
-                ax[j, i].set_title(f't = {time}', y=0.99, fontsize='xx-large')
+                ax[j, i].text2D(-0.2, 0.5, f'{prim_names[j]}', transform=ax[j, i].transAxes, fontsize='x-large')
+        ax[0, i].set_title(f't = {time}', y=0.99, fontsize='x-large')
+    fig.subplots_adjust(0.05, 0.1, 0.92, 0.92)
     if outdir is not None:
         fig.savefig(f'{outdir}/model_output')
     else:
@@ -51,6 +50,7 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
 
 def plot_error2d(times, func, benchmark, error, points_per_dim=25, outdir=None):
     assert error == 'absolute' or error == 'relative'
+    prim_names = ('u', 'w', 'p', 'T')
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
     # --Reshape arrays to match func input dims--
@@ -58,25 +58,28 @@ def plot_error2d(times, func, benchmark, error, points_per_dim=25, outdir=None):
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
 
-    fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(13, 13))
+    fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(8, 7.5))
     title = f'{func.__name__} error'
     if func.__name__ == 'predict':
         title = 'PINN Error'
-    fig.tight_layout()
     fig.suptitle(title)
-    for i, time in enumerate(times):
-        t = time * np.ones_like(x)
-        xzt = np.hstack((x, z, t))
-        if error == 'absolute':
-            out = np.abs(func(xzt) - benchmark(xzt))
-        if error == 'relative':
-            out = np.abs((benchmark(xzt) - func(xzt)) / benchmark(xzt))
-        for j in range(out.shape[1]):
+    for j in range(4):
+        ax[j, 0].text(-0.6, 0.5, f'{prim_names[j]}', transform=ax[j, 0].transAxes, fontsize='x-large')
+        for i, time in enumerate(times):
+            if j == 0:
+                ax[j, i].set_title(f't = {time}', y=0.99, fontsize='x-large')
+            t = time * np.ones_like(x)
+            xzt = np.hstack((x, z, t))
+            if error == 'absolute':
+                out = np.abs(func(xzt) - benchmark(xzt))
+            if error == 'relative':
+                out = np.abs((benchmark(xzt) - func(xzt)) / benchmark(xzt))
             Out = out[:, j].reshape(X.shape)
             cs = ax[j, i].contourf(X, Z, Out)
             ax[j, i].set_xlabel('x')
             ax[j, i].set_ylabel('z')
-            fig.colorbar(cs, ax=ax[j, i])
+            ax[j, i].label_outer()
+        fig.colorbar(cs, ax=ax[j, :])
     if outdir is not None:
         fig.savefig(f'{outdir}/{error}_error')
     else:
