@@ -22,6 +22,7 @@ def get_geomtime():
     return dde.geometry.GeometryXTime(space_domain, time_domain)
 
 
+# TODO: benchmark values for dp_x, dp_z
 def benchmark_solution(xzt):
     x = xzt[:, 0:1]
     z = xzt[:, 1:2]
@@ -35,9 +36,9 @@ def benchmark_solution(xzt):
     return np.hstack((u, w, p, T))
 
 
-def primitive_equations(x, y):
+def primitive_residual_l2(x, y):
     """
-    PDE interior residuals.
+    PDE L2 interior residuals.
     """
     u = y[:, 0:1]
     w = y[:, 1:2]
@@ -65,6 +66,12 @@ def primitive_equations(x, y):
     pde4 = dT_t + u * dT_x + w * dT_z - k_h * dT_xx - k_z * dT_zz - q
 
     return [pde1, pde2, pde3, pde4]
+
+
+def primitive_residual_h1(x, y):
+    """
+    PDE H1 interior residuals.
+    """
 
 
 def init_cond_u(x):
@@ -124,7 +131,7 @@ def learn_primitive_equations():
 
     data = dde.data.TimePDE(
         geomtime,
-        primitive_equations,
+        primitive_residual_l2,
         [*ics, *bcs],
         num_domain=5000,
         num_boundary=500,
@@ -150,8 +157,8 @@ def learn_primitive_equations():
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, outdir)
-    plot_error2d(times, model.predict, benchmark_solution, 'absolute', 50, outdir)
-    plot_error2d(times, model.predict, benchmark_solution, 'relative', 50, outdir)
+    plot_error2d(times, model.predict, benchmark_solution, 50, outdir)
+    plot_error2d(times, model.predict, benchmark_solution, 50, outdir)
 
 
 if __name__ == '__main__':

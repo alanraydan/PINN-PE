@@ -1,3 +1,4 @@
+import deepxde as dde
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +15,8 @@ def get_params():
 
 
 def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
-    prim_names = ('u', 'w', 'p', 'T')
+    prim_names = ('u', 'w', r'$\partial_x p$', r'$\partial_z p$', 'T')
+    nrows = 5
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
 
@@ -23,38 +25,43 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
 
-    fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(9, 9.5), subplot_kw=dict(projection='3d'))
+    fig, ax = plt.subplots(nrows=nrows, ncols=len(times), figsize=(11, 14), subplot_kw=dict(projection='3d'))
     title = func.__name__
     if func.__name__ == 'predict':
         title = 'PINN Output'
     fig.suptitle(title)
 
-    for j in range(4):
+    for j in range(nrows):
 
         maximum = -np.inf
         minimum = np.inf
 
         for i, time in enumerate(times):
-
+            print(j, i)
             t = time * np.ones_like(x)
             xzt = np.hstack((x, z, t))
-            out = func(xzt)
-            maximum = np.max(out[:, j]) if np.max(out[:, j]) > maximum else maximum
-            minimum = np.min(out[:, j]) if np.min(out[:, j]) < minimum else minimum
-            Out = out[:, j].reshape(X.shape)
+            match j:
+                case 0 | 1:
+                    out = func(xzt)[:, j:j+1]
+                case 2:
+                    out = func(xzt, operator=lambda x, y: dde.grad.jacobian(y, x, i=2, j=0))
+                case 3:
+                    out = func(xzt, operator=lambda x, y: dde.grad.jacobian(y, x, i=2, j=1))
+                case 4:
+                    out = func(xzt)[:, j-1:j]
+            maximum = max(out) if max(out) > maximum else maximum
+            minimum = min(out) if min(out) < minimum else minimum
+            Out = out.reshape(X.shape)
             ax[j, i].plot_surface(X, Z, Out)
             ax[j, i].set_xlabel('x')
             ax[j, i].set_ylabel('z')
-
             if i == 0:
                 ax[j, i].text2D(-0.2, 0.5, f'{prim_names[j]}', transform=ax[j, i].transAxes, fontsize='x-large')
             if j == 0:
                 ax[0, i].set_title(f't = {time}', y=0.99, fontsize='x-large')
-
         ax[j, 0].set_zlim(minimum, maximum)
         ax[j, 1].set_zlim(minimum, maximum)
         ax[j, 2].set_zlim(minimum, maximum)
-
     fig.subplots_adjust(0.05, 0.1, 0.92, 0.92)
 
     if outdir is not None:
@@ -63,8 +70,7 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
         plt.show()
 
 
-def plot_error2d(times, func, benchmark, error, points_per_dim=25, outdir=None):
-    assert error == 'absolute' or error == 'relative'
+def plot_error2d(times, func, benchmark, points_per_dim=25, outdir=None):
     prim_names = ('u', 'w', 'p', 'T')
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
@@ -91,10 +97,7 @@ def plot_error2d(times, func, benchmark, error, points_per_dim=25, outdir=None):
                 ax[j, i].set_title(f't = {time}', y=0.99, fontsize='x-large')
             t = time * np.ones_like(x)
             xzt = np.hstack((x, z, t))
-            if error == 'absolute':
-                out = np.abs(func(xzt) - benchmark(xzt))
-            if error == 'relative':
-                out = np.abs((benchmark(xzt) - func(xzt)) / benchmark(xzt))
+            out = np.abs(func(xzt) - benchmark(xzt))
             Out = out[:, j].reshape(X.shape)
             cs = ax[j, i].contourf(X, Z, Out)
             ax[j, i].set_xlabel('x')
@@ -104,6 +107,6 @@ def plot_error2d(times, func, benchmark, error, points_per_dim=25, outdir=None):
         fig.colorbar(cs, ax=ax[j, :])
 
     if outdir is not None:
-        fig.savefig(f'{outdir}/{error}_error')
+        fig.savefig(f'{outdir}/absolute_error')
     else:
         plt.show()
