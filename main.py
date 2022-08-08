@@ -22,7 +22,6 @@ def get_geomtime():
     return dde.geometry.GeometryXTime(space_domain, time_domain)
 
 
-# TODO: benchmark values for dp_x, dp_z
 def benchmark_solution(xzt):
     x = xzt[:, 0:1]
     z = xzt[:, 1:2]
@@ -34,6 +33,17 @@ def benchmark_solution(xzt):
     T = 0.0 * x
 
     return np.hstack((u, w, p, T))
+
+
+def benchmark_dp(xzt):
+    x = xzt[:, 0:1]
+    z = xzt[:, 1:2]
+    t = xzt[:, 2:3]
+
+    dp_x = -np.pi * np.sin(4 * np.pi * x) * np.exp(-8 * np.pi**2 * (v_h + v_z) * t)
+    dp_z = np.zeros_like(x)
+
+    return np.hstack((dp_x, dp_z))
 
 
 def primitive_residual_l2(x, y):
@@ -157,8 +167,7 @@ def learn_primitive_equations():
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, 50, outdir)
-    plot_error2d(times, model.predict, benchmark_solution, 50, outdir)
-    plot_error2d(times, model.predict, benchmark_solution, 50, outdir)
+    plot_error2d(times, model.predict, benchmark_solution, benchmark_dp, 50, outdir)
 
 
 if __name__ == '__main__':

@@ -25,7 +25,7 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
 
-    fig, ax = plt.subplots(nrows=nrows, ncols=len(times), figsize=(11, 14), subplot_kw=dict(projection='3d'))
+    fig, ax = plt.subplots(nrows=nrows, ncols=len(times), figsize=(13, 16), subplot_kw=dict(projection='3d'))
     title = func.__name__
     if func.__name__ == 'predict':
         title = 'PINN Output'
@@ -37,7 +37,6 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
         minimum = np.inf
 
         for i, time in enumerate(times):
-            print(j, i)
             t = time * np.ones_like(x)
             xzt = np.hstack((x, z, t))
             match j:
@@ -62,7 +61,7 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
         ax[j, 0].set_zlim(minimum, maximum)
         ax[j, 1].set_zlim(minimum, maximum)
         ax[j, 2].set_zlim(minimum, maximum)
-    fig.subplots_adjust(0.05, 0.1, 0.92, 0.92)
+    fig.subplots_adjust(0.02, 0.06, 0.95, 0.95)
 
     if outdir is not None:
         fig.savefig(f'{outdir}/model_output')
@@ -70,24 +69,22 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
         plt.show()
 
 
-def plot_error2d(times, func, benchmark, points_per_dim=25, outdir=None):
-    prim_names = ('u', 'w', 'p', 'T')
+def plot_error2d(times, func, benchmark, deriv_bench, points_per_dim=25, outdir=None):
+    prim_names = ('u', 'w', r'$\partial_x p$', r'$\partial_z p$', 'T')
+    nrows = 5
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
     z_vals = np.linspace(0.0, 1.0, points_per_dim)
 
-    # --Reshape arrays to match func input dims--
+    # --Reshape arrays to match func in put dims--
     X, Z = np.meshgrid(x_vals, z_vals)
     x = X.reshape((-1, 1))
     z = Z.reshape((-1, 1))
 
-    fig, ax = plt.subplots(nrows=4, ncols=len(times), figsize=(8, 7.5))
-    title = f'{func.__name__} error'
-    if func.__name__ == 'predict':
-        title = 'PINN Error'
+    fig, ax = plt.subplots(nrows=nrows, ncols=len(times), figsize=(9, 10.5))
+    title = 'PINN Error'
     fig.suptitle(title)
 
-    # TODO: change `range(4)` for better generalization
-    for j in range(4):
+    for j in range(nrows):
 
         ax[j, 0].text(-0.6, 0.5, f'{prim_names[j]}', transform=ax[j, 0].transAxes, fontsize='x-large')
 
@@ -97,8 +94,20 @@ def plot_error2d(times, func, benchmark, points_per_dim=25, outdir=None):
                 ax[j, i].set_title(f't = {time}', y=0.99, fontsize='x-large')
             t = time * np.ones_like(x)
             xzt = np.hstack((x, z, t))
-            out = np.abs(func(xzt) - benchmark(xzt))
-            Out = out[:, j].reshape(X.shape)
+            match j:
+                case 0 | 1:
+                    out = np.abs(func(xzt) - benchmark(xzt))[:, j:j+1]
+                case 2:
+                    learned = func(xzt, operator=lambda x, y: dde.grad.jacobian(y, x, i=2, j=0))
+                    true = deriv_bench(xzt)[:, 0:1]
+                    out = np.abs(learned - true)
+                case 3:
+                    learned = func(xzt, operator=lambda x, y: dde.grad.jacobian(y, x, i=2, j=1))
+                    true = deriv_bench(xzt)[:, 1:2]
+                    out = np.abs(learned - true)
+                case 4:
+                    out = np.abs(func(xzt) - benchmark(xzt))[:, j-1:j]
+            Out = out.reshape(X.shape)
             cs = ax[j, i].contourf(X, Z, Out)
             ax[j, i].set_xlabel('x')
             ax[j, i].set_ylabel('z')
