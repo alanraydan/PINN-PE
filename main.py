@@ -4,12 +4,6 @@ import torch
 from utils import get_params, plot_all_output3d, plot_error2d
 import os
 
-# --Full viscosity and diffusivity--
-v_z = 0.01
-v_h = 0.01
-k_z = 1.0
-k_h = 1.0
-
 # --Setup space and time domains--
 x_min, x_max = 0.0, 1.0
 z_min, z_max = 0.0, 1.0
@@ -22,27 +16,27 @@ def get_geomtime():
     return dde.geometry.GeometryXTime(space_domain, time_domain)
 
 
-def primitive_residual_l2(xzt, y, Q):
+def primitive_residual_l2(xzt, uwpT, Q, v_z, v_h, k_z, k_h):
     """
     PDE L2 interior residuals.
     """
-    u = y[:, 0:1]
-    w = y[:, 1:2]
-    p = y[:, 2:3]
-    T = y[:, 3:4]
-    du_x = dde.grad.jacobian(y, xzt, i=0, j=0)
-    du_z = dde.grad.jacobian(y, xzt, i=0, j=1)
-    du_t = dde.grad.jacobian(y, xzt, i=0, j=2)
-    dw_z = dde.grad.jacobian(y, xzt, i=1, j=1)
-    dp_x = dde.grad.jacobian(y, xzt, i=2, j=0)
-    dp_z = dde.grad.jacobian(y, xzt, i=2, j=1)
-    dT_x = dde.grad.jacobian(y, xzt, i=3, j=0)
-    dT_z = dde.grad.jacobian(y, xzt, i=3, j=1)
-    dT_t = dde.grad.jacobian(y, xzt, i=3, j=2)
-    du_xx = dde.grad.hessian(y, xzt, component=0, i=0, j=0)
-    du_zz = dde.grad.hessian(y, xzt, component=0, i=1, j=1)
-    dT_xx = dde.grad.hessian(y, xzt, component=3, i=0, j=0)
-    dT_zz = dde.grad.hessian(y, xzt, component=3, i=1, j=1)
+    u = uwpT[:, 0:1]
+    w = uwpT[:, 1:2]
+    p = uwpT[:, 2:3]
+    T = uwpT[:, 3:4]
+    du_x = dde.grad.jacobian(uwpT, xzt, i=0, j=0)
+    du_z = dde.grad.jacobian(uwpT, xzt, i=0, j=1)
+    du_t = dde.grad.jacobian(uwpT, xzt, i=0, j=2)
+    dw_z = dde.grad.jacobian(uwpT, xzt, i=1, j=1)
+    dp_x = dde.grad.jacobian(uwpT, xzt, i=2, j=0)
+    dp_z = dde.grad.jacobian(uwpT, xzt, i=2, j=1)
+    dT_x = dde.grad.jacobian(uwpT, xzt, i=3, j=0)
+    dT_z = dde.grad.jacobian(uwpT, xzt, i=3, j=1)
+    dT_t = dde.grad.jacobian(uwpT, xzt, i=3, j=2)
+    du_xx = dde.grad.hessian(uwpT, xzt, component=0, i=0, j=0)
+    du_zz = dde.grad.hessian(uwpT, xzt, component=0, i=1, j=1)
+    dT_xx = dde.grad.hessian(uwpT, xzt, component=3, i=0, j=0)
+    dT_zz = dde.grad.hessian(uwpT, xzt, component=3, i=1, j=1)
     with torch.no_grad():
         q = Q(xzt)
 
@@ -55,7 +49,8 @@ def primitive_residual_l2(xzt, y, Q):
     return [pde1, pde2, pde3, pde4]
 
 
-def primitive_residual_h1(x, y):
+# TODO: Implement H1 norm residuals
+def primitive_residual_h1(xzt, uwpT, Q, v_z, v_h, k_z, k_h):
     """
     PDE H1 interior residuals.
     """
@@ -100,7 +95,7 @@ def learn_primitive_equations():
         case '5.3':
             import eq53_data as eq_data
         case _:
-            raise ValueError('Not a valid equation to solve.')
+            raise ValueError(f'Eq {equation} is not a valid equation to solve.')
 
     # Necessary because numpy defaults to `float64`
     dde.config.set_default_float('float64')
@@ -112,7 +107,7 @@ def learn_primitive_equations():
 
     data = dde.data.TimePDE(
         geomtime,
-        lambda xzt, y: primitive_residual_l2(xzt, y, eq_data.Q),
+        lambda xzt, uwpT: primitive_residual_l2(xzt, uwpT, eq_data.Q, eq_data.v_z, eq_data.v_h, eq_data.k_z, eq_data.k_h),
         [*ics, *bcs],
         num_domain=5000,
         num_boundary=500,

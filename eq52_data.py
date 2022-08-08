@@ -4,8 +4,8 @@ from utils import unpack
 # --Full viscosity and diffusivity--
 v_z = 0.01
 v_h = 0.01
-k_z = 1.0
-k_h = 1.0
+k_z = 0.01
+k_h = 0.01
 
 
 def Q(xzt):
