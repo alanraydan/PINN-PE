@@ -129,7 +129,7 @@ def learn_primitive_equations(equation, outdir):
     model.compile('adam', lr=1e-4, loss='MSE')
     if not os.path.exists(f'./{outdir}'):
         os.mkdir(f'./{outdir}')
-    loss_history, train_state = model.train(iterations=int(100), display_every=1000, model_save_path=f'{outdir}/model')
+    loss_history, train_state = model.train(iterations=int(45000), display_every=1000, model_save_path=f'{outdir}/model')
     dde.saveplot(loss_history, train_state, issave=True, isplot=True, output_dir=outdir)
 
     times = np.array([0.0, 0.5, 1.0])
@@ -140,6 +140,6 @@ def learn_primitive_equations(equation, outdir):
 if __name__ == '__main__':
     n_jobs = 2
     start = time.time()
-    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, f'run{eq}') for eq in ['5.2', '5.3'])
+    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, f'local_run{eq}') for eq in ['5.2', '5.3'])
     end = time.time()
     print(f'{n_jobs} finished running in {end - start} seconds.')
