@@ -3,6 +3,8 @@ import numpy as np
 import torch
 from utils import get_params, plot_all_output3d, plot_error2d
 import os
+from joblib import Parallel, delayed
+import time
 
 # --Setup space and time domains--
 x_min, x_max = 0.0, 1.0
@@ -86,9 +88,8 @@ def boundary_conditions():
 
 
 # --PINN setup and learning iterations--
-def learn_primitive_equations():
+def learn_primitive_equations(equation, outdir):
     # Get output directory name
-    equation, outdir = get_params()
     match equation:
         case '5.2':
             import eq52_data as eq_data
@@ -137,4 +138,7 @@ def learn_primitive_equations():
 
 
 if __name__ == '__main__':
-    learn_primitive_equations()
+    start = time.time()
+    Parallel(n_jobs=2)(delayed(learn_primitive_equations)(eq, f'run{eq}') for eq in ['5.2', '5.3'])
+    end = time.time()
+    print(end - start)
