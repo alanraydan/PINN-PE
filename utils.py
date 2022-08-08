@@ -9,12 +9,20 @@ def get_params():
     Function for parsing parameters from config file.
     """
     parser = argparse.ArgumentParser()
+    parser.add_argument('equation', help='Equation you would like to solve.')
     parser.add_argument('outdir', help='Directory to output data.')
     args = parser.parse_args()
-    return args.outdir
+    return args.equation, args.outdir
 
 
-def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
+def unpack(xzt):
+    x = xzt[:, 0:1]
+    z = xzt[:, 1:2]
+    t = xzt[:, 2:3]
+    return x, z, t
+
+
+def plot_all_output3d(times, func, equation, points_per_dim=25, outdir=None):
     prim_names = ('u', 'w', r'$\partial_x p$', r'$\partial_z p$', 'T')
     nrows = 5
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
@@ -29,6 +37,7 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
     title = func.__name__
     if func.__name__ == 'predict':
         title = 'PINN Output'
+    title += f' {equation}'
     fig.suptitle(title)
 
     for j in range(nrows):
@@ -69,7 +78,7 @@ def plot_all_output3d(times, func, points_per_dim=25, outdir=None):
         plt.show()
 
 
-def plot_error2d(times, func, benchmark, deriv_bench, points_per_dim=25, outdir=None):
+def plot_error2d(times, func, benchmark, deriv_bench, equation, points_per_dim=25, outdir=None):
     prim_names = ('u', 'w', r'$\partial_x p$', r'$\partial_z p$', 'T')
     nrows = 5
     x_vals = np.linspace(0.0, 1.0, points_per_dim)
@@ -81,7 +90,7 @@ def plot_error2d(times, func, benchmark, deriv_bench, points_per_dim=25, outdir=
     z = Z.reshape((-1, 1))
 
     fig, ax = plt.subplots(nrows=nrows, ncols=len(times), figsize=(9, 10.5))
-    title = 'PINN Error'
+    title = f'PINN Error {equation}'
     fig.suptitle(title)
 
     for j in range(nrows):
