@@ -138,7 +138,8 @@ def learn_primitive_equations(equation, outdir):
 
 
 if __name__ == '__main__':
+    n_jobs = 2
     start = time.time()
-    Parallel(n_jobs=2)(delayed(learn_primitive_equations)(eq, f'run{eq}') for eq in ['5.2', '5.3'])
+    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, f'run{eq}') for eq in ['5.2', '5.3'])
     end = time.time()
-    print(end - start)
+    print(f'{n_jobs} finished running in {end - start} seconds.')
