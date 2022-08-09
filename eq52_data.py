@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from utils import unpack
 
 # --Full viscosity and diffusivity--
@@ -10,7 +11,7 @@ k_h = 0.01
 
 def Q(xzt):
     x, z, t = unpack(xzt)
-    return np.pi * np.cos(2 * np.pi * x) * np.sin(4 * np.pi * z) * np.exp(-4 * np.pi**2 * (v_h + v_z + k_z) * t)
+    return np.pi * torch.cos(2 * np.pi * x) * torch.sin(4 * np.pi * z) * torch.exp(-4 * np.pi**2 * (v_h + v_z + k_z) * t)
 
 
 def benchmark_solution(xzt):
