@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from utils import unpack
 
 # --Full viscosity and diffusivity--
@@ -39,9 +40,29 @@ def init_cond_u(xzt):
     return -np.sin(2 * np.pi * x) * np.cos(2 * np.pi * z)
 
 
+def init_cond_du_x(xzt):
+    x, z, t = unpack(xzt)
+    return -2 * np.pi * torch.cos(2 * np.pi * x) * torch.cos(2 * np.pi * z)
+
+
+def init_cond_du_z(xzt):
+    x, z, t = unpack(xzt)
+    return 2 * np.pi * torch.sin(2 * np.pi * x) * torch.sin(2 * np.pi * z)
+
+
 def init_cond_T(xzt):
     """
     Initial condition for T.
     """
     x, z, t = unpack(xzt)
     return np.zeros_like(x)
+
+
+def init_cond_dT_x(xzt):
+    x, z, t = unpack(xzt)
+    return 0.0 * x
+
+
+def init_cond_dT_z(xzt):
+    x, z, t = unpack(xzt)
+    return 0.0 * x

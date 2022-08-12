@@ -66,16 +66,30 @@ def primitive_residual_h1(xzt, uwpT, Q, v_z, v_h, k_z, k_h):
     return [pde1, pde2, pde3, pde4, dpde1_x, dpde1_z, dpde2_x, dpde2_z, dpde3_x, dpde3_z, dpde4_x, dpde4_z]
 
 
-def initial_conditions(init_cond_u, init_cond_T):
+def initial_conditions_l2(init_u, init_T):
     geomtime = get_geomtime()
-    ic_u = dde.icbc.IC(geomtime, init_cond_u, lambda _, on_initial: on_initial, component=0)
-    ic_T = dde.icbc.IC(geomtime, init_cond_T, lambda _, on_initial: on_initial, component=3)
+    ic_u = dde.icbc.IC(geomtime, init_u, lambda _, on_initial: on_initial, component=0)
+    ic_T = dde.icbc.IC(geomtime, init_T, lambda _, on_initial: on_initial, component=3)
     return [ic_u, ic_T]
 
 
-# TODO: Work out initial_conditions_h1()
-def initial_conditions_h1():
-    pass
+def initial_conditions_h1(init_u, init_T, init_du_x, init_du_z, init_dT_x, init_dT_z):
+    geomtime = get_geomtime()
+    ic_u, ic_T = initial_conditions_l2(init_u, init_T)
+
+    ic_du_x = dde.icbc.OperatorBC(geomtime,
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=0, j=0) - init_du_x(xzt),
+                                  lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
+    ic_du_z = dde.icbc.OperatorBC(geomtime,
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=0, j=1) - init_du_z(xzt),
+                                  lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
+    ic_dT_x = dde.icbc.OperatorBC(geomtime,
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=3, j=0) - init_dT_x(xzt),
+                                  lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
+    ic_dT_z = dde.icbc.OperatorBC(geomtime,
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=3, j=1) - init_dT_z(xzt),
+                                  lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
+    return [ic_u, ic_T, ic_du_x, ic_du_z, ic_dT_x, ic_dT_z]
 
 
 def z_boundary(x, on_boundary):
@@ -99,26 +113,22 @@ def boundary_conditions_l2():
     return [bc_u_x, bc_u_z, bc_w_x, bc_w_z, bc_w_z_Dirichlet, bc_p_x, bc_p_z, bc_T_x, bc_T_z]
 
 
-# INCOMPLETE
 def boundary_conditions_h1():
     geomtime = get_geomtime()
-    bc_u_xh1 = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=0)
-    bc_u_zh1 = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=0)
-    bc_w_xh1 = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=1)
-    bc_w_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=1)
-
-    # TODO: Get gradient of dirichlet bc
-    bc_w_z_Dirichlet = dde.icbc.DirichletBC(geomtime, lambda x: 0, z_boundary, component=1)
-
-    bc_p_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=2)
-    bc_p_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=2)
-    bc_T_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=3)
-    bc_T_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=3)
-    pass
+    bc_du_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=0)
+    bc_du_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=0)
+    bc_dw_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=1)
+    bc_dw_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=1)
+    bc_dw_z_Dirichlet = dde.icbc.OperatorBC(geomtime, lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=1, j=0), z_boundary)
+    bc_dp_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=2)
+    bc_dp_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=2)
+    bc_dT_x = dde.icbc.PeriodicBC(geomtime, 0, lambda _, on_boundary: on_boundary, derivative_order=1, component=3)
+    bc_dT_z = dde.icbc.PeriodicBC(geomtime, 1, lambda _, on_boundary: on_boundary, derivative_order=1, component=3)
+    return [*boundary_conditions_l2(), bc_du_x, bc_du_z, bc_dw_x, bc_dw_z, bc_dw_z_Dirichlet, bc_dp_x, bc_dp_z, bc_dT_x, bc_dT_z]
 
 
 # --PINN setup and learning iterations--
-def learn_primitive_equations(equation, outdir):
+def learn_primitive_equations(equation, iters, outdir):
     # Get output directory name
     match equation:
         case '5.2':
@@ -133,12 +143,14 @@ def learn_primitive_equations(equation, outdir):
 
     # Setup boundary and initial conditions
     geomtime = get_geomtime()
-    ics = initial_conditions(eq_data.init_cond_u, eq_data.init_cond_T)
-    bcs = boundary_conditions_l2()
+    ics = initial_conditions_h1(eq_data.init_cond_u, eq_data.init_cond_T,
+                                eq_data.init_cond_du_x, eq_data.init_cond_du_z,
+                                eq_data.init_cond_dT_x, eq_data.init_cond_dT_z)
+    bcs = boundary_conditions_h1()
 
     data = dde.data.TimePDE(
         geomtime,
-        lambda xzt, uwpT: primitive_residual_l2(xzt, uwpT, eq_data.Q, eq_data.v_z, eq_data.v_h, eq_data.k_z, eq_data.k_h),
+        lambda xzt, uwpT: primitive_residual_h1(xzt, uwpT, eq_data.Q, eq_data.v_z, eq_data.v_h, eq_data.k_z, eq_data.k_h),
         [*ics, *bcs],
         num_domain=5000,
         num_boundary=500,
@@ -159,7 +171,7 @@ def learn_primitive_equations(equation, outdir):
     model.compile('adam', lr=1e-4, loss='MSE')
     if not os.path.exists(f'./{outdir}'):
         os.mkdir(f'./{outdir}')
-    loss_history, train_state = model.train(iterations=int(50000), display_every=1000, model_save_path=f'{outdir}/model')
+    loss_history, train_state = model.train(iterations=int(iters), display_every=1000, model_save_path=f'{outdir}/model')
     dde.saveplot(loss_history, train_state, issave=True, isplot=True, output_dir=outdir)
 
     times = np.array([0.0, 0.5, 1.0])
@@ -169,8 +181,11 @@ def learn_primitive_equations(equation, outdir):
 
 if __name__ == '__main__':
     n_jobs = 2
+    n_iters = 45000
+    eqs = ['5.2', '5.3']
     start = time.time()
     print(f'Job initiated at time {start}.')
-    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, f'run{eq}') for eq in ['5.2', '5.3'])
+    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, f'eq{eq}_{n_iters}iters_h1') for eq in eqs)
     end = time.time()
-    print(f'{n_jobs} finished running in {end - start} seconds.')
+    print(f'{n_jobs} jobs finished running in {end - start} seconds.')
+
