@@ -108,11 +108,11 @@ def plot_error2d(times, func, benchmark, deriv_bench, equation, points_per_dim=2
                     out = np.abs(func(xzt) - benchmark(xzt))[:, j:j+1]
                 case 2:
                     learned = func(xzt, operator=lambda x, y: dde.grad.jacobian(y, x, i=2, j=0))
-                    true = deriv_bench(xzt)[:, 0:1]
+                    true, _ = deriv_bench(xzt)
                     out = np.abs(learned - true)
                 case 3:
                     learned = func(xzt, operator=lambda x, y: dde.grad.jacobian(y, x, i=2, j=1))
-                    true = deriv_bench(xzt)[:, 1:2]
+                    _, true = deriv_bench(xzt)
                     out = np.abs(learned - true)
                 case 4:
                     out = np.abs(func(xzt) - benchmark(xzt))[:, j-1:j]

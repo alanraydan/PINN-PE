@@ -24,12 +24,35 @@ def benchmark_solution(xzt):
     return np.hstack((u, w, p, T))
 
 
+def benchmark_du(xzt):
+    x, z, t = unpack(xzt)
+    exp_factor = np.exp(-4 * np.pi**2 * (v_h + v_z) * t)
+    du_x = -2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z) * exp_factor
+    du_z = 2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z) * exp_factor
+    return [du_x, du_z]
+
+
+def benchmark_dw(xzt):
+    x, z, t = unpack(xzt)
+    exp_factor = np.exp(-4 * np.pi ** 2 * (v_h + v_z) * t)
+    dw_x = -2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z) * exp_factor
+    dw_z = 2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z) * exp_factor
+    return [dw_x, dw_z]
+
+
 def benchmark_dp(xzt):
     x, z, t = unpack(xzt)
     dp_x = -np.pi * np.sin(4 * np.pi * x) * np.exp(-8 * np.pi**2 * (v_h + v_z) * t)
-    dp_z = np.zeros_like(x)
+    dp_z = 0.0 * x
 
-    return np.hstack((dp_x, dp_z))
+    return [dp_x, dp_z]
+
+
+def benchmark_dT(xzt):
+    x, z, t = unpack(xzt)
+    dT_x = 0.0 * x
+    dT_z = 0.0 * x
+    return [dT_x, dT_z]
 
 
 def init_cond_u(xzt):
