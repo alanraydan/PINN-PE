@@ -128,13 +128,15 @@ def boundary_conditions_h1():
 
 
 # --PINN setup and learning iterations--
-def learn_primitive_equations(equation, iters, outdir):
-    # Get output directory name
+def learn_primitive_equations(equation, iters, residual, outdir):
+    assert residual == 'l2' or residual == 'h1'
     match equation:
         case '5.2':
             import eq52_data as eq_data
         case '5.3':
             import eq53_data as eq_data
+        case '5.4':
+            import eq54_data as eq_data
         case _:
             raise ValueError(f'Eq {equation} is not a valid equation to solve.')
 
@@ -143,14 +145,21 @@ def learn_primitive_equations(equation, iters, outdir):
 
     # Setup boundary and initial conditions
     geomtime = get_geomtime()
-    ics = initial_conditions_h1(eq_data.init_cond_u, eq_data.init_cond_T,
-                                eq_data.init_cond_du_x, eq_data.init_cond_du_z,
-                                eq_data.init_cond_dT_x, eq_data.init_cond_dT_z)
-    bcs = boundary_conditions_h1()
+
+    if residual == 'h1':
+        ics = initial_conditions_h1(eq_data.init_cond_u, eq_data.init_cond_T,
+                                    eq_data.init_cond_du_x, eq_data.init_cond_du_z,
+                                    eq_data.init_cond_dT_x, eq_data.init_cond_dT_z)
+        bcs = boundary_conditions_h1()
+        res = primitive_residual_h1
+    if residual == 'l2':
+        ics = initial_conditions_l2(eq_data.init_cond_u, eq_data.init_cond_T)
+        bcs = boundary_conditions_l2()
+        res = primitive_residual_l2
 
     data = dde.data.TimePDE(
         geomtime,
-        lambda xzt, uwpT: primitive_residual_h1(xzt, uwpT, eq_data.Q, eq_data.v_z, eq_data.v_h, eq_data.k_z, eq_data.k_h),
+        lambda xzt, uwpT: res(xzt, uwpT, eq_data.Q, eq_data.v_z, eq_data.v_h, eq_data.k_z, eq_data.k_h),
         [*ics, *bcs],
         num_domain=5000,
         num_boundary=500,
@@ -181,11 +190,12 @@ def learn_primitive_equations(equation, iters, outdir):
 
 if __name__ == '__main__':
     n_jobs = 2
-    n_iters = 45000
-    eqs = ['5.2', '5.3']
+    n_iters = 50000
+    eq = '5.4'
+    residuals = ['l2', 'h1']
     start = time.time()
     print(f'Job initiated at time {start}.')
-    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, f'eq{eq}_{n_iters}iters_h1') for eq in eqs)
+    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, res, f'eq{eq}_{n_iters}iters_{res}') for res in residuals)
     end = time.time()
     print(f'{n_jobs} jobs finished running in {end - start} seconds.')
 
