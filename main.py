@@ -195,7 +195,7 @@ if __name__ == '__main__':
     residuals = ['l2', 'h1']
     start = time.time()
     print(f'Job initiated at time {start}.')
-    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, res, f'eq{eq}_{n_iters}iters_{res}') for res in residuals)
+    Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, res, f'eq{eq}_{n_iters}iters_{res}res') for res in residuals)
     end = time.time()
     print(f'{n_jobs} jobs finished running in {end - start} seconds.')
 
