@@ -137,6 +137,8 @@ def learn_primitive_equations(equation, iters, residual, outdir):
             import eq53_data as eq_data
         case '5.4':
             import eq54_data as eq_data
+        case '5.5':
+            import eq55_data as eq_data
         case _:
             raise ValueError(f'Eq {equation} is not a valid equation to solve.')
 
@@ -147,9 +149,14 @@ def learn_primitive_equations(equation, iters, residual, outdir):
     geomtime = get_geomtime()
 
     if residual == 'h1':
-        ics = initial_conditions_h1(eq_data.init_cond_u, eq_data.init_cond_T,
-                                    eq_data.init_cond_du_x, eq_data.init_cond_du_z,
-                                    eq_data.init_cond_dT_x, eq_data.init_cond_dT_z)
+        ics = initial_conditions_h1(
+            eq_data.init_cond_u,
+            eq_data.init_cond_T,
+            eq_data.init_cond_du_x,
+            eq_data.init_cond_du_z,
+            eq_data.init_cond_dT_x,
+            eq_data.init_cond_dT_z
+        )
         bcs = boundary_conditions_h1()
         res = primitive_residual_h1
     if residual == 'l2':
@@ -190,8 +197,8 @@ def learn_primitive_equations(equation, iters, residual, outdir):
 
 if __name__ == '__main__':
     n_jobs = 2
-    n_iters = 50000
-    eq = '5.4'
+    n_iters = 50_000
+    eq = '5.5'
     residuals = ['l2', 'h1']
     start = time.time()
     print(f'Job initiated at time {start}.')
