@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from utils import unpack
 
 # --Full viscosity and diffusivity--

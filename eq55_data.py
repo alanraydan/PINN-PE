@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from utils import unpack
 
 # --Only horizontal viscosity and diffusivity--
