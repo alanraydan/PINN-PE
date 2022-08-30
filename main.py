@@ -78,16 +78,16 @@ def initial_conditions_h1(init_u, init_T, init_du_x, init_du_z, init_dT_x, init_
     ic_u, ic_T = initial_conditions_l2(init_u, init_T)
 
     ic_du_x = dde.icbc.OperatorBC(geomtime,
-                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=0, j=0) - init_du_x(xzt),
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=0, j=0) - init_du_x(xzt.detach()),
                                   lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
     ic_du_z = dde.icbc.OperatorBC(geomtime,
-                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=0, j=1) - init_du_z(xzt),
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=0, j=1) - init_du_z(xzt.detach()),
                                   lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
     ic_dT_x = dde.icbc.OperatorBC(geomtime,
-                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=3, j=0) - init_dT_x(xzt),
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=3, j=0) - init_dT_x(xzt.detach()),
                                   lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
     ic_dT_z = dde.icbc.OperatorBC(geomtime,
-                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=3, j=1) - init_dT_z(xzt),
+                                  lambda xzt, uwpT, _: dde.grad.jacobian(uwpT, xzt, i=3, j=1) - init_dT_z(xzt.detach()),
                                   lambda xzt, on_boundary: np.isclose(xzt[2], 0.0))
     return [ic_u, ic_T, ic_du_x, ic_du_z, ic_dT_x, ic_dT_z]
 
@@ -197,8 +197,8 @@ def learn_primitive_equations(equation, iters, residual, outdir):
 
 if __name__ == '__main__':
     n_jobs = 2
-    n_iters = 50_000
-    eq = '5.5'
+    n_iters = 50
+    eq = '5.2'
     residuals = ['l2', 'h1']
     start = time.time()
     print(f'Job initiated at time {start}.')

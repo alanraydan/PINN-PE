@@ -65,12 +65,12 @@ def init_cond_u(xzt):
 
 def init_cond_du_x(xzt):
     x, z, t = unpack(xzt)
-    return -2 * np.pi * torch.cos(2 * np.pi * x) * torch.cos(2 * np.pi * z)
+    return -2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z)
 
 
 def init_cond_du_z(xzt):
     x, z, t = unpack(xzt)
-    return 2 * np.pi * torch.sin(2 * np.pi * x) * torch.sin(2 * np.pi * z)
+    return 2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z)
 
 
 def init_cond_T(xzt):

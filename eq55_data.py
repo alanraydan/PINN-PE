@@ -25,17 +25,17 @@ def benchmark_solution(xzt):
 
 def benchmark_du(xzt):
     x, z, t = unpack(xzt)
-    exp_factor = torch.exp(-4 * np.pi**2 * v_h * t)
-    du_x = -2 * np.pi * torch.cos(2 * np.pi * x) * torch.cos(2 * np.pi * z) * exp_factor
-    du_z = 2 * np.pi * torch.sin(2 * np.pi * x) * torch.sin(2 * np.pi * z) * exp_factor
+    exp_factor = np.exp(-4 * np.pi**2 * v_h * t)
+    du_x = -2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z) * exp_factor
+    du_z = 2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z) * exp_factor
     return [du_x, du_z]
 
 
 def benchmark_dw(xzt):
     x, z, t = unpack(xzt)
-    exp_factor = torch.exp(-4 * np.pi ** 2 * v_h * t)
-    dw_x = -2 * np.pi * torch.sin(2 * np.pi * x) * torch.cos(2 * np.pi * z) * exp_factor
-    dw_z = 2 * np.pi * torch.cos(2 * np.pi * x) * torch.cos(2 * np.pi * z) * exp_factor
+    exp_factor = np.exp(-4 * np.pi ** 2 * v_h * t)
+    dw_x = -2 * np.pi * np.sin(2 * np.pi * x) * np.cos(2 * np.pi * z) * exp_factor
+    dw_z = 2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z) * exp_factor
     return [dw_x, dw_z]
 
 
@@ -60,12 +60,12 @@ def init_cond_u(xzt):
 
 def init_cond_du_x(xzt):
     x, z, t = unpack(xzt)
-    return -2 * np.pi * torch.cos(2 * np.pi * x) * torch.cos(2 * np.pi * z)
+    return -2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z)
 
 
 def init_cond_du_z(xzt):
     x, z, t = unpack(xzt)
-    return 2 * np.pi * torch.sin(2 * np.pi * x) * torch.sin(2 * np.pi * z)
+    return 2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z)
 
 
 def init_cond_T(xzt):
