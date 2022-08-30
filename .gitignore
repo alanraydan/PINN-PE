@@ -5,3 +5,5 @@ PINN_test.ipynb
 .DS_Store
 __pycache__/
 *.slurm
+slurm*
+*.txt
