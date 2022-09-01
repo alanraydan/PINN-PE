@@ -3,7 +3,7 @@ import numpy as np
 from utils import plot_all_output3d, plot_error2d
 import os
 from joblib import Parallel, delayed
-import time
+import sys
 
 # --Setup space and time domains--
 x_min, x_max = 0.0, 1.0
@@ -197,12 +197,8 @@ def learn_primitive_equations(equation, iters, residual, outdir):
 
 if __name__ == '__main__':
     n_jobs = 2
-    n_iters = 50
-    eq = '5.2'
+    n_iters = 50_000
+    eq = sys.argv[1]
     residuals = ['l2', 'h1']
-    start = time.time()
-    print(f'Job initiated at time {start}.')
     Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, res, f'eq{eq}_{n_iters}iters_{res}res') for res in residuals)
-    end = time.time()
-    print(f'{n_jobs} jobs finished running in {end - start} seconds.')
 

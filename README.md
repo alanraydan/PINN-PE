@@ -15,7 +15,13 @@ After both are installed, you will need to set DeepXDE's backend to `pytorch` in
 Consult the DeepXDE documentation for how to do this.
 
 ---
-If you run into the following error when you try to run the newest version of the code, let me know and I can help fix it:
+## Program Entry Point
+You can run the program in `main.py` by passing the equation number of the benchmark equation from section 5
+that you wish to train as a command line argument. For example,
+```shell script
+python3 main.py 5.2
 ```
-RuntimeError: expected scalar type Float but found Double
-```
+will train the PINN on the initial and boundary data given from equation 5.2.
+
+The program will attempt to execute two runs in parallel; one trained using the $L^2$ residuals
+and the other using the $H^1$ residuals.
