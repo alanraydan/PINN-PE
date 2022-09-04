@@ -10,14 +10,23 @@ k_h = 0.01
 
 
 def Q(xzt):
+    """
+    Q(x,z,t) = pi cos(2 pi x) sin(4 pi z) exp(-4 pi^2 v_h t)
+    """
     x, z, t = unpack(xzt)
     return np.pi * torch.cos(2 * np.pi * x) * torch.sin(4 * np.pi * z) * torch.exp(-4 * np.pi**2 * v_h * t)
 
 
 def benchmark_solution(xzt):
+    """
+    u(x,z,t) = -sin(2 pi x) cos(2 pi z) exp(-4 pi^2 v_h t)
+    w(x,z,t) = cos(2 pi x) sin(2 pi z) exp(-4 pi^2 v_h t)
+    p(x,z,t) = 1/4 cos(4 pi x) exp(-8 pi^2 v_h t) + cos(2 pi z)/(2 pi)
+    T(x,z,t) = sin(2 pi z)
+    """
     x, z, t = unpack(xzt)
-    u = -np.sin(2 * np.pi * x) * np.cos(2 * np.pi * z) * np.exp(-4 * np.pi * np.pi * v_h * t)
-    w = np.cos(2 * np.pi * x) * np.sin(2 * np.pi * z) * np.exp(-4 * np.pi * np.pi * v_h * t)
+    u = -np.sin(2 * np.pi * x) * np.cos(2 * np.pi * z) * np.exp(-4 * np.pi**2 * v_h * t)
+    w = np.cos(2 * np.pi * x) * np.sin(2 * np.pi * z) * np.exp(-4 * np.pi**2 * v_h * t)
     p = 0.25 * np.cos(4 * np.pi * x) * np.exp(-8 * np.pi**2 * v_h * t) + np.cos(2 * np.pi * z) / (2 * np.pi)
     T = np.sin(2 * np.pi * z)
 
@@ -25,6 +34,10 @@ def benchmark_solution(xzt):
 
 
 def benchmark_du(xzt):
+    """
+    du/dx(x,z,t) = -2 pi cos(2 pi x) cos(2*pi*z) exp(-4 pi^2 v_h t)
+    du/dz(x,z,t) = 2 pi sin(2 pi x) sin(2*pi*z) exp(-4 pi^2 v_h t)
+    """
     x, z, t = unpack(xzt)
     exp_factor = np.exp(-4 * np.pi**2 * v_h * t)
     du_x = -2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z) * exp_factor
@@ -33,6 +46,10 @@ def benchmark_du(xzt):
 
 
 def benchmark_dw(xzt):
+    """
+    dw/dx(x,z,t) = -2 pi sin(2 pi x) sin(2*pi*z) exp(-4 pi^2 v_h t)
+    dw/dz(x,z,t) = 2 pi cos(2 pi x) cos(2*pi*z) exp(-4 pi^2 v_h t)
+    """
     x, z, t = unpack(xzt)
     exp_factor = np.exp(-4 * np.pi ** 2 * v_h * t)
     dw_x = -2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z) * exp_factor
@@ -41,6 +58,10 @@ def benchmark_dw(xzt):
 
 
 def benchmark_dp(xzt):
+    """
+    dp/dx(x,z,t) = -pi sin(4 pi x) exp(-8 pi^2 v_h t)
+    dp/dz(x,z,t) = -sin(2 pi z)
+    """
     x, z, t = unpack(xzt)
     dp_x = -np.pi * np.sin(4 * np.pi * x) * np.exp(-8 * np.pi**2 * v_h * t)
     dp_z = -np.sin(2 * np.pi * z)
@@ -49,6 +70,10 @@ def benchmark_dp(xzt):
 
 
 def benchmark_dT(xzt):
+    """
+    dT/dx(x,z,t) = 0
+    dT/dz(x,z,t) = 2 pi cos(2 pi z)
+    """
     x, z, t = unpack(xzt)
     dT_x = 0.0 * x
     dT_z = 2 * np.pi * np.cos(2 * np.pi * z)
@@ -57,35 +82,47 @@ def benchmark_dT(xzt):
 
 def init_cond_u(xzt):
     """
-    Initial condition for u.
+    u(x,z,t=0)= -sin(2 pi x) cos(2 pi z)
     """
     x, z, t = unpack(xzt)
     return -np.sin(2 * np.pi * x) * np.cos(2 * np.pi * z)
 
 
 def init_cond_du_x(xzt):
+    """
+    du/dx(x,z,t=0) = -2 pi cos(2 pi x) cos(2 pi z)
+    """
     x, z, t = unpack(xzt)
     return -2 * np.pi * np.cos(2 * np.pi * x) * np.cos(2 * np.pi * z)
 
 
 def init_cond_du_z(xzt):
+    """
+    du/dz(x,z,t=0) = 2 pi sin(2 pi x) sin(2 pi z)
+    """
     x, z, t = unpack(xzt)
     return 2 * np.pi * np.sin(2 * np.pi * x) * np.sin(2 * np.pi * z)
 
 
 def init_cond_T(xzt):
     """
-    Initial condition for T.
+    T(x,z,t=0) = sin(2 pi z)
     """
     x, z, t = unpack(xzt)
     return np.sin(2 * np.pi * z)
 
 
 def init_cond_dT_x(xzt):
+    """
+    dT/dx(x,z,t=0) = 0
+    """
     x, z, t = unpack(xzt)
     return 0.0 * x
 
 
 def init_cond_dT_z(xzt):
+    """
+    dT/dz(x,z,t=0) = 2 pi cos(2 pi z)
+    """
     x, z, t = unpack(xzt)
     return 2 * np.pi * np.cos(2 * np.pi * z)
