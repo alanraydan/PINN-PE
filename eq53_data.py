@@ -74,7 +74,7 @@ def init_cond_du_z(xzt):
 
 def init_cond_T(xzt):
     """
-    Initial condition for T.
+    Initial condition T(x,z,t=0) = 0
     """
     x, z, t = unpack(xzt)
     return np.zeros_like(x)
