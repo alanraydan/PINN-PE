@@ -78,7 +78,7 @@ def plot_all_output3d(times, func, equation, points_per_dim=25, outdir=None):
         plt.show()
 
 
-def plot_error2d(times, func, benchmark, deriv_bench, equation, points_per_dim=25, outdir=None):
+def plot_absolute_error2d(times, func, benchmark, deriv_bench, equation, points_per_dim=25, outdir=None):
     prim_names = ('u', 'w', r'$\partial_x p$', r'$\partial_z p$', 'T')
     nrows = 5
     x_vals = np.linspace(0.0, 1.0, points_per_dim)

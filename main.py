@@ -1,6 +1,6 @@
 import deepxde as dde
 import numpy as np
-from utils import plot_all_output3d, plot_error2d
+from utils import plot_all_output3d, plot_absolute_error2d
 import os
 from joblib import Parallel, delayed
 import sys
@@ -192,7 +192,7 @@ def learn_primitive_equations(equation, iters, residual, outdir):
 
     times = np.array([0.0, 0.5, 1.0])
     plot_all_output3d(times, model.predict, equation, 50, outdir)
-    plot_error2d(times, model.predict, eq_data.benchmark_solution, eq_data.benchmark_dp, equation, 50, outdir)
+    plot_absolute_error2d(times, model.predict, eq_data.benchmark_solution, eq_data.benchmark_dp, equation, 50, outdir)
 
 
 if __name__ == '__main__':
