@@ -197,7 +197,7 @@ def learn_primitive_equations(equation, iters, residual, outdir):
 
 if __name__ == '__main__':
     n_jobs = 2
-    n_iters = 50_000
+    n_iters = 100_000
     eq = sys.argv[1]
     residuals = ['l2', 'h1']
     Parallel(n_jobs=n_jobs)(delayed(learn_primitive_equations)(eq, n_iters, res, f'eq{eq}_{n_iters}iters_{res}res') for res in residuals)
