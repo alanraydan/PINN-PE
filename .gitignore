@@ -1,6 +1,3 @@
-.ipynb_checkpoints
-PINN.ipynb
-PINN_test.ipynb
 .idea
 .DS_Store
 __pycache__/
