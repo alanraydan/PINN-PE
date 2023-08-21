@@ -1,8 +1,7 @@
 # PINN-PE
 
-Numerical component of "Error Estimates for Physics Informed Neural 
-Networks Approximating the Primitive Equations" by Ruimeng Hu, Quyuan Lin, 
-Alan Raydan, and Sui Tang.
+Numerical component of
+Hu, R., Lin, Q., Raydan, A. et al. Higher-order error estimates for physics-informed neural networks approximating the primitive equations. Partial Differ. Equ. Appl. 4, 34 (2023). https://doi.org/10.1007/s42985-023-00254-y
 
 ---
 You will need to install PyTorch and DeepXDE. If you are using a conda environment you can install both with the following commands:
